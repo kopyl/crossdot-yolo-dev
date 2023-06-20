@@ -14,7 +14,7 @@ app = Flask(__name__)
 # log.setLevel(logging.ERROR)
 
 class_names = {0: 'adult', 1: 'nipple', 2: 'underage'}
-yolov8_detector = YOLOv8("yolov8_custom_trained_model.onnx", conf_thres=0.1, iou_thres=0.1)
+yolov8_detector = YOLOv8("model.onnx", conf_thres=0.1, iou_thres=0.1)
 
 
 def get_image_from_url(image_url):
