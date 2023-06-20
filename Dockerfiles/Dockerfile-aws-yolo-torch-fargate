@@ -1,0 +1,18 @@
+FROM python:3.10-slim AS build
+
+RUN pip install ultralytics==8.0.117 && \
+    pip uninstall opencv-python -y && \
+    pip install opencv-python-headless==4.7.0.72 && \
+    pip install Flask==2.3.2 && \
+    pip cache purge
+
+COPY yolov8_custom_trained_model.pt yolov8_custom_trained_model.pt
+COPY flast-server.py flast-server.py
+
+EXPOSE 80
+
+ENV PYTHONUNBUFFERED=1
+
+ENTRYPOINT ["python"]
+
+CMD ["flast-server.py"]

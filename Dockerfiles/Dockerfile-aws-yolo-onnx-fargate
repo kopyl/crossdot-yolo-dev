@@ -1,0 +1,18 @@
+FROM python:3.10-slim AS build
+
+RUN pip install onnxruntime==1.13.1 && \
+    pip install opencv-python-headless==4.7.0.72 && \
+    pip install Flask==2.3.2 && \
+    pip cache purge
+
+COPY ONNX-YOLOv8-Object-Detection ONNX-YOLOv8-Object-Detection
+
+WORKDIR /ONNX-YOLOv8-Object-Detection
+
+EXPOSE 80
+
+ENV PYTHONUNBUFFERED=1
+
+ENTRYPOINT ["python"]
+
+CMD ["test_flask.py"]
