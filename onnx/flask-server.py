@@ -99,7 +99,7 @@ def create_formatted_response(predictions):
     return formatted_response
 
 
-@app.route("/", methods=["POST"])
+@app.route("/v0/classify/image", methods=["POST"])
 def home():
     data = request.get_json()
     image_url = data.get("image_url")
