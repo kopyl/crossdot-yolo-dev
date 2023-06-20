@@ -69,6 +69,36 @@ def predict_single_image(img_url):
     return list(prediction)
 
 
+def create_formatted_response(predictions):
+    nipple_scores = [x[1] for x in predictions if x[0] == "nipple"]
+    child_scores = [x[1] for x in predictions if x[0] == "underage"]
+    adult_scores = [x[1] for x in predictions if x[0] == "adult"]
+
+    nipple_max_score = max(nipple_scores) if len(nipple_scores) > 0 else 0
+    child_max_score = max(child_scores) if len(child_scores) > 0 else 0
+    adult_max_score = max(adult_scores) if len(adult_scores) > 0 else 0
+
+    child_nsfw_score = 0
+    if child_max_score > 0 and nipple_max_score > 0:
+        child_nsfw_score = max(child_max_score, nipple_max_score)
+
+    adult_nsfw_score = 0
+    if adult_max_score > 0 and nipple_max_score > 0:
+        adult_nsfw_score = max(adult_max_score, nipple_max_score)
+
+    formatted_response = {
+        "categories": {
+            "child_nsfw": True if child_nsfw_score > 0 else False,
+            "adult_nsfw": True if adult_nsfw_score > 0 else False,
+        },
+        "scores": {
+            "child_nsfw": child_nsfw_score,
+            "adult_nsfw": adult_nsfw_score,
+        },
+    }
+    return formatted_response
+
+
 @app.route("/", methods=["POST"])
 def home():
     data = request.get_json()
@@ -80,14 +110,14 @@ def home():
     if token != "8Jw1kj5Woa4SDHtD%hH!7v%NBox0!47^WL4--":
         return jsonify({"result": "Invalid token"}), 401
     print(image_url)
-    result = {
-        "predictions": predict_single_image(image_url),
-    }
+
+    prediction = predict_single_image(image_url)
+    formatted_response = create_formatted_response(prediction)
 
     if data.get("return_version"):
-        result["version"] = "1.0.4"
+        formatted_response["version"] = "1.0.5"
 
-    return jsonify(result), 200
+    return jsonify(formatted_response), 200
 
 
 @app.route("/", methods=["GET"])
