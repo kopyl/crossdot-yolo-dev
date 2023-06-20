@@ -144,7 +144,7 @@ def home():
     reduce_queries_left(token)
 
     if data.get("return_version"):
-        result["version"] = "1.0.4"
+        result["version"] = "1.0.5"
 
     return jsonify(result), 200
 
