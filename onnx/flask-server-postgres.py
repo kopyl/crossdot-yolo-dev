@@ -12,9 +12,9 @@ import datetime
 app = Flask(__name__)
 db_init_args = {
     "database": "postgres",
-    "host": os.environ.get("DB_HOST"),
-    "user": os.environ.get("DB_USER"),
-    "password": os.environ.get("DB_PASSWORD"),
+    "host": os.environ.get("AWS_POSTGRES_DB_HOST"),
+    "user": os.environ.get("AWS_POSTGRES_DB_USER"),
+    "password": os.environ.get("AWS_POSTGRES_DB_PASSWORD"),
     "port": 5432,
 }
 conn = psycopg2.connect(**db_init_args)
