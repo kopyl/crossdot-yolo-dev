@@ -124,10 +124,10 @@ def create_formatted_response(predictions):
 @app.route("/v0/classify/image", methods=["POST"])
 def home():
     data = request.get_json()
-    image_url = data.get("image_url")
+    image_url = data.get("input")
 
     if not image_url:
-        return jsonify({"result": "No image_url"}), 400
+        return jsonify({"result": "Image url not provided"}), 400
     print(image_url)
     token = request.headers.get("Authorization")
     if not token:
