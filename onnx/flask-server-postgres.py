@@ -33,12 +33,14 @@ def get_user_by_id(user_id, cursor):
     return cursor.fetchone()
 
 
-def save_query(image_url, detected_objects, cursor):
+def save_query(image_url, detected_objects, user_id, cursor):
     created_at = datetime.datetime.now()
     updated_at = created_at
     cursor.execute(
-        "insert into generated_images (created_at, updated_at, image_url, detected_objects) values (%s, %s, %s, %s);",
-        (created_at, updated_at, image_url, json.dumps(detected_objects))
+        "insert into generated_images "
+        "(created_at, updated_at, image_url, detected_objects, user_id) "
+        "values (%s, %s, %s, %s, %s);",
+        (created_at, updated_at, image_url, json.dumps(detected_objects), user_id)
     )
 
 
@@ -155,7 +157,7 @@ def home():
     cursor.execute("update users set balances = %s where id = %s;", (new_balance, user_id))
 
     prediction = predict_single_image(image_url)
-    save_query(image_url, prediction, cursor)
+    save_query(image_url, prediction, user_id, cursor)
 
     conn.commit()
     cursor.close()
