@@ -94,16 +94,22 @@ def predict_single_image(img_url):
     img = img["image"]
 
     img = resize_with_pad(img, (800, 800))
-    _, scores, class_ids = yolov8_detector(img)
+    boxes, scores, class_ids = yolov8_detector(img)
     prediction = map(
-        lambda x: [class_names[x[0]], float(x[1])], zip(class_ids, scores)
+        lambda x:
+            {
+                "label": class_names[x[0]],
+                "score": float(x[1]),
+                "box": [float(x) for x in x[2]]
+            },
+        zip(class_ids, scores, boxes)
     )
     return list(prediction)
 
 
 def create_formatted_response(predictions):
     def get_max_score(category):
-        scores = [x[1] for x in predictions if x[0] == category]
+        scores = [x["score"] for x in predictions if x["label"] == category]
         return max(scores) if len(scores) > 0 else 0
 
     child_max_score = get_max_score("underage")
@@ -130,10 +136,11 @@ def create_formatted_response(predictions):
             "child_nsfw": child_nsfw_score > 0,
             "adult_nsfw": adult_nsfw_score > 0,
         },
-        "scores": {
+        "confidence_scores": {
             "child_nsfw": child_nsfw_score,
             "adult_nsfw": adult_nsfw_score,
         },
+        "predictions": predictions,
     }
     return formatted_response
 
@@ -180,7 +187,7 @@ def home():
     formatted_response = create_formatted_response(prediction)
 
     if data.get("return_version"):
-        formatted_response["version"] = "1.2.0"
+        formatted_response["version"] = "1.2.1"
 
     return jsonify(formatted_response), 200
 
