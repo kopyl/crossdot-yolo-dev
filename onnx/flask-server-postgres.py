@@ -19,8 +19,16 @@ db_init_args = {
 }
 conn = psycopg2.connect(**db_init_args)
 
-class_names = {0: 'adult', 1: 'nipple', 2: 'underage'}
-yolov8_detector = YOLOv8("model.onnx", conf_thres=0.1, iou_thres=0.1)
+class_names = {
+    0: 'adult',
+    1: 'exposed_anus',
+    2: 'exposed_buttock',
+    3: 'female_genitalia',
+    4: 'male_genitalia',
+    5: 'nipple',
+    6: 'underage'
+}
+yolov8_detector = YOLOv8("model.onnx", conf_thres=0.35, iou_thres=0.6)
 
 
 def get_user_token_by_token(token, cursor):
@@ -94,26 +102,33 @@ def predict_single_image(img_url):
 
 
 def create_formatted_response(predictions):
-    nipple_scores = [x[1] for x in predictions if x[0] == "nipple"]
-    child_scores = [x[1] for x in predictions if x[0] == "underage"]
-    adult_scores = [x[1] for x in predictions if x[0] == "adult"]
+    def get_max_score(category):
+        scores = [x[1] for x in predictions if x[0] == category]
+        return max(scores) if len(scores) > 0 else 0
 
-    nipple_max_score = max(nipple_scores) if len(nipple_scores) > 0 else 0
-    child_max_score = max(child_scores) if len(child_scores) > 0 else 0
-    adult_max_score = max(adult_scores) if len(adult_scores) > 0 else 0
+    child_max_score = get_max_score("underage")
+    adult_max_score = get_max_score("adult")
+
+    nsfw_max_score = max([
+        get_max_score("nipple"),
+        get_max_score("exposed_anus"),
+        get_max_score("exposed_anus"),
+        get_max_score("female_genitalia"),
+        get_max_score("male_genitalia"),
+    ])
 
     child_nsfw_score = 0
-    if child_max_score > 0 and nipple_max_score > 0:
-        child_nsfw_score = max(child_max_score, nipple_max_score)
+    if child_max_score > 0 and nsfw_max_score > 0:
+        child_nsfw_score = max(child_max_score, nsfw_max_score)
 
     adult_nsfw_score = 0
-    if adult_max_score > 0 and nipple_max_score > 0:
-        adult_nsfw_score = max(adult_max_score, nipple_max_score)
+    if adult_max_score > 0 and nsfw_max_score > 0:
+        adult_nsfw_score = max(adult_max_score, nsfw_max_score)
 
     formatted_response = {
         "categories": {
-            "child_nsfw": True if child_nsfw_score > 0 else False,
-            "adult_nsfw": True if adult_nsfw_score > 0 else False,
+            "child_nsfw": child_nsfw_score > 0,
+            "adult_nsfw": adult_nsfw_score > 0,
         },
         "scores": {
             "child_nsfw": child_nsfw_score,
