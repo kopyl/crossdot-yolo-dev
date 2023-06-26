@@ -28,7 +28,8 @@ class_names = {
     5: 'nipple',
     6: 'underage'
 }
-yolov8_detector = YOLOv8("model.onnx", conf_thres=0.35, iou_thres=0.6)
+model_path = os.environ.get("ONNX_MODEL_PATH", "model.onnx")
+yolov8_detector = YOLOv8(model_path, conf_thres=0.35, iou_thres=0.6)
 
 
 def get_user_token_by_token(token, cursor):
