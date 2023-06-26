@@ -3,3 +3,4 @@ __pycache__/
 torch-models/
 notebooks/
 archive/
+*.txt
