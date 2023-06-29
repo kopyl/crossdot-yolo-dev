@@ -114,12 +114,11 @@ def create_formatted_response(predictions):
         return max(scores) if len(scores) > 0 else 0
 
     child_max_score = get_max_score("underage")
-    adult_max_score = get_max_score("adult")
 
     nsfw_max_score = max([
         get_max_score("nipple"),
         get_max_score("exposed_anus"),
-        get_max_score("exposed_anus"),
+        get_max_score("exposed_buttock"),
         get_max_score("female_genitalia"),
         get_max_score("male_genitalia"),
     ])
@@ -128,18 +127,18 @@ def create_formatted_response(predictions):
     if child_max_score > 0 and nsfw_max_score > 0:
         child_nsfw_score = max(child_max_score, nsfw_max_score)
 
-    adult_nsfw_score = 0
-    if adult_max_score > 0 and nsfw_max_score > 0:
-        adult_nsfw_score = max(adult_max_score, nsfw_max_score)
+    other_nsfw_score = 0
+    if nsfw_max_score > 0 and not child_nsfw_score:
+        other_nsfw_score = nsfw_max_score
 
     formatted_response = {
         "categories": {
             "child_nsfw": child_nsfw_score > 0,
-            "adult_nsfw": adult_nsfw_score > 0,
+            "other_nsfw": other_nsfw_score > 0,
         },
         "confidence_scores": {
             "child_nsfw": child_nsfw_score,
-            "adult_nsfw": adult_nsfw_score,
+            "other_nsfw": other_nsfw_score,
         },
         "predictions": predictions,
     }
