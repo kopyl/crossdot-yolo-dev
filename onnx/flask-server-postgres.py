@@ -187,7 +187,7 @@ def home():
     formatted_response = create_formatted_response(prediction)
 
     if data.get("return_version"):
-        formatted_response["version"] = "1.3.1"
+        formatted_response["version"] = "1.3.2"
 
     return jsonify(formatted_response), 200
 
