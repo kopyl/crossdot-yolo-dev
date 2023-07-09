@@ -1,0 +1,9 @@
+FROM public.ecr.aws/lambda/python:3.10-x86_64
+
+RUN pip install opencv-python-headless==4.8.0.74 && \
+    pip install psycopg2-binary==2.9.6 && \
+    pip cache purge
+
+COPY DeepSparse_onnx_quant_and_pruned_clean_no-onnx ./
+
+CMD ["app.handler"]

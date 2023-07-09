@@ -1,12 +1,14 @@
 import time
 import cv2
 import numpy as np
-import onnxruntime
+
+import numpy
+from deepsparse import Engine
 
 from yolov8.utils import xywh2xyxy, nms, draw_detections
 
 
-class YOLOv8:
+class YOLOv8_DeepSparse:
 
     def __init__(self, path, conf_thres=0.7, iou_thres=0.5):
         self.conf_threshold = conf_thres
@@ -19,12 +21,11 @@ class YOLOv8:
         return self.detect_objects(image)
 
     def initialize_model(self, path):
-        self.session = onnxruntime.InferenceSession(path,
-                                                    providers=['CUDAExecutionProvider',
-                                                               'CPUExecutionProvider'])
+        self.session = Engine(path)
+        self.size = 640
         # Get model info
-        self.get_input_details()
-        self.get_output_details()
+        # self.get_input_details()
+        # self.get_output_details()
 
 
     def detect_objects(self, image):
@@ -43,21 +44,19 @@ class YOLOv8:
         input_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Resize input image
-        input_img = cv2.resize(input_img, (self.input_width, self.input_height))
+        input_img = cv2.resize(input_img, (self.size, self.size))
 
         # Scale input pixel values to 0 to 1
-        input_img = input_img / 255.0
         input_img = input_img.transpose(2, 0, 1)
-        input_tensor = input_img[np.newaxis, :, :, :].astype(np.float32)
+        input_tensor = input_img[np.newaxis, :, :, :].astype(np.uint8)
 
         return input_tensor
 
 
     def inference(self, input_tensor):
         start = time.perf_counter()
-        outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})
-
-        print(f"Inference time: {(time.perf_counter() - start)*1000:.2f} ms")
+        outputs = numpy.ascontiguousarray(input_tensor)
+        outputs = self.session([outputs])
         return outputs
 
     def process_output(self, output):
@@ -97,7 +96,7 @@ class YOLOv8:
     def rescale_boxes(self, boxes):
 
         # Rescale boxes to original image dimensions
-        input_shape = np.array([self.input_width, self.input_height, self.input_width, self.input_height])
+        input_shape = np.array([self.size, self.size, self.size, self.size])
         boxes = np.divide(boxes, input_shape, dtype=np.float32)
         boxes *= np.array([self.img_width, self.img_height, self.img_width, self.img_height])
         return boxes

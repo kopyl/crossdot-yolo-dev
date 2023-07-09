@@ -1,4 +1,4 @@
-from yolov8 import YOLOv8
+from yolov8 import YOLOv8_DeepSparse
 import cv2
 import numpy as np
 import urllib.request
@@ -27,7 +27,7 @@ class_names = {
     6: 'underage'
 }
 model_path = os.environ.get("ONNX_MODEL_PATH", "model.onnx")
-yolov8_detector = YOLOv8(model_path, conf_thres=0.35, iou_thres=0.6)
+yolov8_detector = YOLOv8_DeepSparse(model_path, conf_thres=0.35, iou_thres=0.6)
 
 
 def get_user_token_by_token(token, cursor):
@@ -92,7 +92,7 @@ def predict_single_image(img_url):
         return img
     img = img["image"]
 
-    img = resize_with_pad(img, (800, 800))
+    img = resize_with_pad(img, (640, 640))
     boxes, scores, class_ids = yolov8_detector(img)
     prediction = map(
         lambda x:
@@ -201,6 +201,6 @@ def handler(event, context):
     formatted_response = create_formatted_response(prediction)
 
     if return_version:
-        formatted_response["version"] = "1.3.5"
+        formatted_response["version"] = "1.4.0"
 
     return make_return(200, formatted_response, return_version)

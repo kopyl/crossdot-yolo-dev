@@ -7,6 +7,7 @@ import psycopg2
 import json
 import os
 import datetime
+import time
 
 
 app = Flask(__name__)
@@ -90,12 +91,18 @@ def resize_with_pad(image,
 
 def predict_single_image(img_url):
     img = get_image_from_url(img_url)
+    start = time.perf_counter()
     if "error" in img:
         return img
+    print("Error check time: ", time.perf_counter() - start)
+    start = time.perf_counter()
     img = img["image"]
+    print("Image get time: ", time.perf_counter() - start)
 
     img = resize_with_pad(img, (800, 800))
+    start = time.perf_counter()
     boxes, scores, class_ids = yolov8_detector(img)
+    print("Detection time: ", time.perf_counter() - start)
     prediction = map(
         lambda x:
             {
@@ -187,7 +194,7 @@ def home():
     formatted_response = create_formatted_response(prediction)
 
     if data.get("return_version"):
-        formatted_response["version"] = "1.3.2"
+        formatted_response["version"] = "1.3.1"
 
     return jsonify(formatted_response), 200
 
