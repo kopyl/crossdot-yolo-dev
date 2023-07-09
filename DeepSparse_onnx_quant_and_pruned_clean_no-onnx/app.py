@@ -160,7 +160,6 @@ def handler(event, context):
     body = json.loads(event.get("body", "{}"))
 
     image_url = body.get("input")
-    print(image_url)
     return_version = body.get("return_version")
 
     token = event.get("headers", {}).get("authorization")
