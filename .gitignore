@@ -4,3 +4,7 @@ torch-models/
 notebooks/
 archive/
 *.txt
+*.onnx
+*.so
+*.so.*
+*.bin

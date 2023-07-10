@@ -1,5 +1,4 @@
-from flask import Flask, request, jsonify
-from yolov8 import YOLOv8
+from yolov8 import YOLOv8_DeepSparse
 import cv2
 import numpy as np
 import urllib.request
@@ -9,7 +8,6 @@ import os
 import datetime
 
 
-app = Flask(__name__)
 db_init_args = {
     "database": "postgres",
     "host": os.environ.get("AWS_POSTGRES_DB_HOST"),
@@ -29,7 +27,7 @@ class_names = {
     6: 'underage'
 }
 model_path = os.environ.get("ONNX_MODEL_PATH", "model.onnx")
-yolov8_detector = YOLOv8(model_path, conf_thres=0.35, iou_thres=0.6)
+yolov8_detector = YOLOv8_DeepSparse(model_path, conf_thres=0.35, iou_thres=0.6)
 
 
 def get_user_token_by_token(token, cursor):
@@ -94,7 +92,7 @@ def predict_single_image(img_url):
         return img
     img = img["image"]
 
-    img = resize_with_pad(img, (800, 800))
+    img = resize_with_pad(img, (640, 640))
     boxes, scores, class_ids = yolov8_detector(img)
     prediction = map(
         lambda x:
@@ -145,35 +143,50 @@ def create_formatted_response(predictions):
     return formatted_response
 
 
-@app.route("/v0/classify/image", methods=["POST"])
-def home():
-    data = request.get_json()
-    image_url = data.get("input")
+def make_return(status_code, result, return_version=False):
+    body = {
+        "body": json.dumps(result),
+        "headers": {
+            "Content-Type": "application/json",
+        },
+        "statusCode": status_code
+    }
+    if return_version:
+        body["version"] = "1.0.4"
+    return body
+
+
+def handler(event, context):
+    body = json.loads(event.get("body", "{}"))
+
+    image_url = body.get("input")
+    return_version = body.get("return_version")
+
+    token = event.get("headers", {}).get("authorization")
 
     if not image_url:
-        return jsonify({"result": "Image url not provided"}), 400
-    print(image_url)
-    token = request.headers.get("Authorization")
+        return make_return(400, "No image url", return_version)
     if not token:
-        return jsonify({"result": "No token"}), 401
+        return make_return(401, "No token", return_version)
     
     cursor = conn.cursor()
 
     user_token = get_user_token_by_token(token, cursor)
+
     if not user_token:
         cursor.close()
-        return jsonify({"result": "Invalid token"}), 401
+        return make_return(401, "Invalid token", return_version)
     
     user_id = user_token[1]
     user = get_user_by_id(user_id, cursor)
     if not user:
         cursor.close()
-        return jsonify({"result": "User not found"}), 404
+        return make_return(404, "User not found", return_version)
     
     balance = user[12]
     if balance <= 0:
         cursor.close()
-        return jsonify({"result": "No queries left"}), 402
+        return make_return(402, "Insufficient funds", return_version)
 
     new_balance = balance - 0.0003
     cursor.execute("update users set balances = %s where id = %s;", (new_balance, user_id))
@@ -186,19 +199,7 @@ def home():
 
     formatted_response = create_formatted_response(prediction)
 
-    if data.get("return_version"):
-        formatted_response["version"] = "1.3.1"
+    if return_version:
+        formatted_response["version"] = "1.4.0"
 
-    return jsonify(formatted_response), 200
-
-
-@app.route("/", methods=["GET"])
-def home_get():
-    return "Hello World!"
-
-
-if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=80)
-    # fastwsgi.run(wsgi_app=app, host='0.0.0.0', port=80)
-    # app.run(debug=True, host="0.0.0.0", port=80, threaded=True)
-    # app.run(debug=True, host="0.0.0.0", port=80, threaded=False, processes=64)
+    return make_return(200, formatted_response, return_version)
